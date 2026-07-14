@@ -23,7 +23,7 @@ jobs:
           if [ -n "$PARENT_DIR" ]; then
             echo "Tìm thấy thư mục con: $PARENT_DIR"
             
-            # 2. Tạo một thư mục tạm để lưu cấu hình CI/CD của bản gốc KernelSU tránh ghi đè trực tiếp gây lỗi
+            # 2. Tạo một thư mục tạm để lưu cấu hình CI/CD của bản gốc KernelSU
             mkdir -p temp_workflows
             if [ -d "$PARENT_DIR/.github/workflows" ]; then
               cp -r "$PARENT_DIR/.github/workflows"/* temp_workflows/
