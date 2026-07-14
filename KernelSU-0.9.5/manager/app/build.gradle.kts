@@ -22,6 +22,16 @@ apksign {
 android {
     namespace = "me.weishu.kernelsu"
 
+    defaultConfig {
+        // ==========================================
+        // THAY ĐỔI 1: Chỉ định các kiến trúc CPU cần build.
+        // Thêm 'armeabi-v7a' để hỗ trợ các máy chạy 32-bit.
+        // ==========================================
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a", "x86_64"))
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
