@@ -38,7 +38,6 @@ jobs:
     - name: Setup rustup
       run: |
         rustup update stable
-        # Thêm các target cần thiết cho PC/Mac và Android 32-bit (ARMv7)
         rustup target add x86_64-apple-darwin
         rustup target add aarch64-apple-darwin
         rustup target add armv7-linux-androideabi
@@ -58,6 +57,5 @@ jobs:
     - name: Upload ksud artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ksud-${__{{ inputs.target }}__} # Sửa lại cú pháp nhận diện chính xác của GitHub
         name: ksud-${{ inputs.target }}
         path: userspace/ksud/target/**/release/ksud*
