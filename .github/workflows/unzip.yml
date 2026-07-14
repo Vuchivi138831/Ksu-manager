@@ -1,4 +1,4 @@
-name: Unzip KernelSU Source
+name: Cut and Flatten Source
 
 on:
   workflow_dispatch:
@@ -7,29 +7,54 @@ permissions:
   contents: write
 
 jobs:
-  unzip-source:
+  flatten-source:
     runs-on: ubuntu-latest
 
     steps:
-      # Bước 1: Lấy mã nguồn hiện tại từ repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Bước 2: Chỉ chạy duy nhất lệnh unzip bình thường ghi đè vào thư mục gốc
-      - name: Unzip file
+      - name: Move all files and workflows to root
         run: |
-          unzip -o KernelSU-0.9.5.zip -d ./
+          # 1. Tìm thư mục con KernelSU-0.9.5
+          PARENT_DIR=$(find . -maxdepth 1 -type d -name "KernelSU*" | head -n 1)
+          
+          if [ -n "$PARENT_DIR" ]; then
+            echo "Tìm thấy thư mục con: $PARENT_DIR"
+            
+            # 2. Tạo một thư mục tạm để lưu cấu hình CI/CD của bản gốc KernelSU tránh ghi đè trực tiếp gây lỗi
+            mkdir -p temp_workflows
+            if [ -d "$PARENT_DIR/.github/workflows" ]; then
+              cp -r "$PARENT_DIR/.github/workflows"/* temp_workflows/
+              rm -rf "$PARENT_DIR/.github"
+            fi
+            
+            # 3. Cắt (di chuyển) toàn bộ mã nguồn ra thư mục gốc
+            shopt -s dotglob
+            mv -f "$PARENT_DIR"/* ./
+            shopt -u dotglob
+            
+            # 4. Gộp các file workflow của KernelSU vào thư mục gốc .github/workflows/
+            mkdir -p .github/workflows
+            cp -r temp_workflows/* .github/workflows/
+            rm -rf temp_workflows
+            
+            # 5. Xóa thư mục con trống
+            rm -rf "$PARENT_DIR"
+            echo "Đã di chuyển thành công toàn bộ mã nguồn và cấu hình Actions ra gốc!"
+          else
+            echo "Không tìm thấy thư mục con nào!"
+            exit 1
+          fi
 
-      # Bước 3: Xóa file ZIP gốc sau khi giải nén xong
-      - name: Remove ZIP file
-        run: |
-          rm -f KernelSU-0.9.5.zip
-
-      # Bước 4: Commit và đẩy code lên GitHub
       - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git commit -m "Giải nén KernelSU-0.9.5.zip thành công"
-          git push origin HEAD:${{ github.ref }}
+          if git diff-index --quiet HEAD --; then
+            echo "Không có thay đổi."
+          else
+            git commit -m "Đưa toàn bộ mã nguồn và workflow ra thư mục gốc thành công"
+            git push origin HEAD:${{ github.ref }}
+          fi
