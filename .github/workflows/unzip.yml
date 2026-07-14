@@ -1,0 +1,56 @@
+name: Unzip KernelSU Source
+
+on:
+  # Cho phép bạn kích hoạt workflow này thủ công từ tab Actions trên GitHub
+  workflow_dispatch:
+
+# Cấp quyền ghi vào repository cho GitHub Actions token
+permissions:
+  contents: write
+
+jobs:
+  unzip-source:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Bước 1: Checkout mã nguồn hiện tại của repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Bước 2: Kiểm tra xem file zip có tồn tại ở thư mục gốc hay không
+      - name: Check if zip file exists
+        run: |
+          if [ -f "KernelSU-0.9.5.zip" ]; then
+            echo "Tìm thấy file KernelSU-0.9.5.zip. Chuẩn bị giải nén..."
+          else
+            echo "Lỗi: Không tìm thấy file KernelSU-0.9.5.zip ở thư mục gốc!"
+            exit 1
+          fi
+
+      # Bước 3: Tiến hành giải nén ghi đè (overwrite) vào thư mục gốc
+      - name: Unzip KernelSU-0.9.5.zip
+        run: |
+          unzip -o KernelSU-0.9.5.zip -d ./
+
+      # Bước 4: Kiểm tra lại các file sau khi giải nén (Tùy chọn)
+      - name: List extracted files
+        run: |
+          echo "Danh sách các file sau khi giải nén:"
+          ls -la
+
+      # Bước 5: Commit và Push các thay đổi ngược trở lại GitHub
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Thêm tất cả các file đã giải nén vào git tracking
+          git add .
+          
+          # Kiểm tra xem có thay đổi nào để commit không
+          if git diff-index --quiet HEAD --; then
+            echo "Không có thay đổi nào mới để commit."
+          else
+            git commit -m "Chạy tự động: Giải nén KernelSU-0.9.5.zip"
+            git push origin HEAD:${{ github.ref }}
+          fi
