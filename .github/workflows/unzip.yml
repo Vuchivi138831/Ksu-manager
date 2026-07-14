@@ -27,30 +27,65 @@ jobs:
             exit 1
           fi
 
-      # Bước 3: Tiến hành giải nén ghi đè (overwrite) vào thư mục gốc
-      - name: Unzip KernelSU-0.9.5.zip
+      # Bước 3: Dọn dẹp/Xóa thư mục lỗi đã giải nén từ trước (nếu có)
+      - name: Clean up previous incorrect folder
         run: |
-          unzip -o KernelSU-0.9.5.zip -d ./
+          # Tìm các thư mục có tên bắt đầu bằng "KernelSU" (nhưng không phải file .zip) và xóa đi
+          # Điều này giúp dọn sạch thư mục dư thừa cũ mà bạn chưa kịp xóa thủ công.
+          find . -maxdepth 1 -type d -name "KernelSU*" -exec rm -rf {} +
+          echo "Đã dọn dẹp sạch các thư mục cũ trùng tên."
 
-      # Bước 4: Kiểm tra lại các file sau khi giải nén (Tùy chọn)
+      # Bước 4: Giải nén tạm thời vào một thư mục tạm, sau đó di chuyển nội dung ra ngoài
+      - name: Unzip and Flatten Structure
+        run: |
+          # Tạo một thư mục tạm để giải nén
+          mkdir temp_extract
+          unzip -o KernelSU-0.9.5.zip -d temp_extract
+          
+          # Tìm thư mục con duy nhất bên trong (thường là KernelSU-0.9.5)
+          SUB_DIR=$(find temp_extract -mindepth 1 -maxdepth 1 -type d | head -n 1)
+          
+          if [ -n "$SUB_DIR" ]; then
+            echo "Tìm thấy thư mục bọc ngoài: $SUB_DIR. Đang đưa các file ra thư mục gốc..."
+            # Di chuyển tất cả các file (kể cả file ẩn như .github, .gitignore) ra thư mục gốc
+            shopt -s dotglob
+            mv -f "$SUB_DIR"/* ./
+            shopt -u dotglob
+          else
+            echo "Không tìm thấy thư mục con bọc ngoài. Di chuyển trực tiếp..."
+            shopt -s dotglob
+            mv -f temp_extract/* ./
+            shopt -u dotglob
+          fi
+          
+          # Dọn dẹp các thư mục tạm
+          rm -rf temp_extract
+
+      # Bước 5: (Tùy chọn) Xóa file ZIP gốc để giải phóng dung lượng repo
+      - name: Remove ZIP file after extraction
+        run: |
+          rm -f KernelSU-0.9.5.zip
+          echo "Đã xóa file KernelSU-0.9.5.zip để tránh nặng repo."
+
+      # Bước 6: Kiểm tra lại các file sau khi giải nén ở thư mục gốc
       - name: List extracted files
         run: |
-          echo "Danh sách các file sau khi giải nén:"
+          echo "Danh sách các file tại thư mục gốc sau khi dọn dẹp và xử lý:"
           ls -la
 
-      # Bước 5: Commit và Push các thay đổi ngược trở lại GitHub
+      # Bước 7: Commit và Push các thay đổi ngược trở lại GitHub
       - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Thêm tất cả các file đã giải nén vào git tracking
-          git add .
+          # Nhận diện tất cả file mới, file bị thay đổi và cả những file bị xóa (như thư mục cũ & file zip)
+          git add -A
           
           # Kiểm tra xem có thay đổi nào để commit không
           if git diff-index --quiet HEAD --; then
             echo "Không có thay đổi nào mới để commit."
           else
-            git commit -m "Chạy tự động: Giải nén KernelSU-0.9.5.zip"
+            git commit -m "Chạy tự động: Dọn dẹp thư mục cũ và giải nén làm phẳng KernelSU-0.9.5"
             git push origin HEAD:${{ github.ref }}
           fi
