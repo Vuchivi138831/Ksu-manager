@@ -14,19 +14,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. Giải nén chính xác file KernelSU-0.9.5.zip
+      # 1. Giải nén file zip nhưng loại bỏ hoàn toàn thư mục .github
       - name: Unzip Source Code
         run: |
           if [ -f "KernelSU-0.9.5.zip" ]; then
-            echo "Tìm thấy KernelSU-0.9.5.zip. Đang giải nén..."
-            unzip -o KernelSU-0.9.5.zip
-            rm -f KernelSU-0.9.5.zip # Xóa file zip để dọn dẹp repo
+            echo "Tìm thấy KernelSU-0.9.5.zip. Đang tiến hành giải nén..."
+            
+            # Tham số -x "*/.github/*" dùng để chặn không cho giải nén bất kỳ file workflow nào
+            unzip -o KernelSU-0.9.5.zip -x "*/.github/*"
+            
+            # Xóa file zip gốc để giữ repo nhẹ nhàng
+            rm -f KernelSU-0.9.5.zip
           else
             echo "LỖI: Không tìm thấy file KernelSU-0.9.5.zip ở thư mục gốc!"
             exit 1
           fi
 
-      # 2. Commit và đẩy thư mục KernelSU-0.9.5 lên GitHub
+      # 2. Commit và đẩy toàn bộ mã nguồn thuần túy lên GitHub
       - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -36,6 +40,6 @@ jobs:
           if git diff-index --quiet HEAD --; then
             echo "Không có thay đổi nào để commit."
           else
-            git commit -m "Giải nén mã nguồn vào thư mục KernelSU-0.9.5 thành công"
+            git commit -m "Giải nén mã nguồn (đã loại bỏ thư mục workflows hệ thống) thành công"
             git push origin HEAD:${{ github.ref }}
           fi
