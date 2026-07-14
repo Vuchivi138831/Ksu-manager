@@ -14,23 +14,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 1. Giải nén file zip nhưng loại bỏ hoàn toàn thư mục .github
+      # 1. Giải nén toàn bộ file zip
       - name: Unzip Source Code
         run: |
           if [ -f "KernelSU-0.9.5.zip" ]; then
             echo "Tìm thấy KernelSU-0.9.5.zip. Đang tiến hành giải nén..."
+            unzip -o KernelSU-0.9.5.zip
             
-            # Tham số -x "*/.github/*" dùng để chặn không cho giải nén bất kỳ file workflow nào
-            unzip -o KernelSU-0.9.5.zip -x "*/.github/*"
-            
-            # Xóa file zip gốc để giữ repo nhẹ nhàng
+            # Xóa file zip gốc để tránh làm nặng repo
             rm -f KernelSU-0.9.5.zip
           else
             echo "LỖI: Không tìm thấy file KernelSU-0.9.5.zip ở thư mục gốc!"
             exit 1
           fi
 
-      # 2. Commit và đẩy toàn bộ mã nguồn thuần túy lên GitHub
+      # 2. KIỂM TRA VÀ XÓA BỎ HOÀN TOÀN THƯ MỤC .github VỪA GIẢI NÉN ĐỂ TRÁNH LỖI WORKFLOWS
+      # Chúng ta chỉ giữ lại file unzip.yml hiện tại đang chạy bằng cách loại trừ nó ra
+      - name: Clean extracted workflows
+        run: |
+          echo "Đang dọn dẹp các file workflow giải nén từ file zip..."
+          
+          # Di chuyển tạm file unzip.yml đang chạy ra ngoài để bảo vệ nó
+          mkdir -p ../temp_holder
+          cp .github/workflows/unzip.yml ../temp_holder/unzip.yml
+          
+          # Xóa sạch thư mục .github vừa giải nén từ file zip (bao gồm cả add-device.yml)
+          rm -rf .github
+          
+          # Tạo lại thư mục cấu hình sạch và khôi phục lại duy nhất file unzip.yml
+          mkdir -p .github/workflows
+          mv ../temp_holder/unzip.yml .github/workflows/unzip.yml
+          
+          echo "Đã xóa sạch các file workflow rác thành công!"
+
+      # 3. Commit và đẩy toàn bộ mã nguồn thuần túy lên GitHub
       - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -40,6 +57,6 @@ jobs:
           if git diff-index --quiet HEAD --; then
             echo "Không có thay đổi nào để commit."
           else
-            git commit -m "Giải nén mã nguồn (đã loại bỏ thư mục workflows hệ thống) thành công"
+            git commit -m "Giải nén mã nguồn (đã dọn dẹp sạch workflows hệ thống) thành công"
             git push origin HEAD:${{ github.ref }}
           fi
