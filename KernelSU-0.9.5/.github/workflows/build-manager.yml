@@ -26,6 +26,11 @@ jobs:
         include:
           - target: aarch64-linux-android
             os: ubuntu-latest
+          # ==========================================
+          # THÊM: Target build ksud cho kiến trúc 32-bit (ARMv7)
+          # ==========================================
+          - target: armv7-linux-androideabi
+            os: ubuntu-latest
           - target: x86_64-linux-android
             os: ubuntu-latest
           - target: x86_64-pc-windows-gnu # windows pc
@@ -95,17 +100,31 @@ jobs:
           name: ksud-aarch64-linux-android
           path: .
 
+      # ==========================================
+      # THÊM: Tải file nhị phân ksud 32-bit về máy ảo
+      # ==========================================
+      - name: Download armv7 (32-bit) ksud
+        uses: actions/download-artifact@v4
+        with:
+          name: ksud-armv7-linux-androideabi
+          path: .
+
       - name: Download x86_64 ksud
         uses: actions/download-artifact@v4
         with:
           name: ksud-x86_64-linux-android
           path: .
 
+      # ==========================================
+      # THAY ĐỔI: Khởi tạo thư mục và sao chép file .so 32-bit vào jniLibs
+      # ==========================================
       - name: Copy ksud to app jniLibs
         run: |
           mkdir -p app/src/main/jniLibs/arm64-v8a
+          mkdir -p app/src/main/jniLibs/armeabi-v7a
           mkdir -p app/src/main/jniLibs/x86_64
           cp -f ../aarch64-linux-android/release/ksud ../manager/app/src/main/jniLibs/arm64-v8a/libksud.so
+          cp -f ../armv7-linux-androideabi/release/ksud ../manager/app/src/main/jniLibs/armeabi-v7a/libksud.so
           cp -f ../x86_64-linux-android/release/ksud ../manager/app/src/main/jniLibs/x86_64/libksud.so
 
       - name: Build with Gradle
