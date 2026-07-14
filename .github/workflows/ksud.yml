@@ -13,7 +13,8 @@ on:
       pack_lkm:
         required: false
         type: boolean
-        default: true
+        # Đặt mặc định là false vì chúng ta không build LKM nữa
+        default: false
       use_cache:
         required: false
         type: boolean
@@ -27,13 +28,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-    
-    - name: Prepare LKM files
-      if: ${{ inputs.pack_lkm }}
-      run: |
-        cp android*-lkm/*_kernelsu.ko ./userspace/ksud/bin/aarch64/
+    # Đã xóa bước tải và copy LKM (nhẹ đi rất nhiều!)
         
     - name: Setup rustup
       run: |
