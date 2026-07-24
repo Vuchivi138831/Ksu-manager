@@ -1,4 +1,4 @@
-use anyhow::{Ok, Result};
+use anyhow::Result;
 use getopts::Options;
 use std::env;
 use std::ffi::CString;
