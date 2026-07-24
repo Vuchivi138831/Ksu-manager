@@ -17,9 +17,10 @@ jobs:
         with:
           submodules: recursive
 
-      # 2. Cài đặt Android NDK
+      # 2. Cài đặt Android NDK (Đã sửa tên Action chính xác)
       - name: Setup Android NDK
-        uses: nsetup/setup-ndk@v2
+        uses: android-actions/setup-ndk@v3
+        id: setup-ndk
         with:
           ndk-version: r25c
 
@@ -34,9 +35,9 @@ jobs:
         run: |
           cd userspace/ksud
           
-          # Thiết lập biến môi trường trỏ đến Clang của Android NDK
-          export CC_armv7_linux_androideabi=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
-          export AR_armv7_linux_androideabi=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          # Biến $ANDROID_NDK_ROOT được tự động thiết lập bởi android-actions/setup-ndk
+          export CC_armv7_linux_androideabi=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
+          export AR_armv7_linux_androideabi=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
           
           cargo build --target armv7-linux-androideabi --release
           
