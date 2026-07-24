@@ -17,27 +17,21 @@ jobs:
         with:
           submodules: recursive
 
-      # 2. Cài đặt Android NDK (Đã sửa tên Action chính xác)
-      - name: Setup Android NDK
-        uses: android-actions/setup-ndk@v3
-        id: setup-ndk
-        with:
-          ndk-version: r25c
-
-      # 3. Cài đặt Toolchain Rust & Target ARMv7 (32-bit)
+      # 2. Cài đặt Toolchain Rust & Target ARMv7 (32-bit)
       - name: Set up Rust for ARMv7
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: armv7-linux-androideabi
 
-      # 4. Biên dịch ksud bằng Cargo
+      # 3. Biên dịch ksud bằng Cargo (Sử dụng NDK có sẵn trên Runner)
       - name: Build ksud with Cargo
         run: |
           cd userspace/ksud
           
-          # Biến $ANDROID_NDK_ROOT được tự động thiết lập bởi android-actions/setup-ndk
-          export CC_armv7_linux_androideabi=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
-          export AR_armv7_linux_androideabi=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          # Tận dụng NDK có sẵn tại $ANDROID_NDK_LATEST_HOME trên máy chủ GitHub
+          export NDK_PATH=$ANDROID_NDK_LATEST_HOME
+          export CC_armv7_linux_androideabi=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
+          export AR_armv7_linux_androideabi=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
           
           cargo build --target armv7-linux-androideabi --release
           
@@ -45,7 +39,7 @@ jobs:
           mkdir -p bin/armeabi-v7a
           cp target/armv7-linux-androideabi/release/ksud bin/armeabi-v7a/ksud
 
-      # 5. Tự động commit và push file ksud mới lên repository
+      # 4. Tự động commit và push file ksud mới lên repository
       - name: Commit and Push prebuilt ksud binary
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
