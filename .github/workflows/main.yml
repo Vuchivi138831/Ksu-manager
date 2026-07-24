@@ -1,9 +1,8 @@
 name: Build and Push ksud Binary (ARMv7 32-bit)
 
 on:
-  workflow_dispatch: # Bấm nút chạy thủ công
+  workflow_dispatch:
 
-# Cấp quyền GHI (write) cho GITHUB_TOKEN để có thể git push lại vào repo
 permissions:
   contents: write
 
@@ -17,28 +16,37 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Cài đặt Toolchain Rust & Target ARMv7 (32-bit)
+      # 2. Cài đặt Android NDK
+      - name: Setup Android NDK
+        uses: nsetup/setup-ndk@v2
+        with:
+          ndk-version: r25c
+
+      # 3. Cài đặt Toolchain Rust & Target ARMv7 (32-bit)
       - name: Set up Rust for ARMv7
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: armv7-linux-androideabi
 
-      # 3. Biên dịch ksud bằng Cargo và đưa vào đúng thư mục bin/armeabi-v7a
+      # 4. Biên dịch ksud bằng Cargo
       - name: Build ksud with Cargo
         run: |
           cd userspace/ksud
+          
+          # Thiết lập biến môi trường trỏ đến Clang của Android NDK
+          export CC_armv7_linux_androideabi=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
+          export AR_armv7_linux_androideabi=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          
           cargo build --target armv7-linux-androideabi --release
           
-          # Tạo thư mục armeabi-v7a và copy file ksud sang
+          # Copy file vào bin/armeabi-v7a
           mkdir -p bin/armeabi-v7a
           cp target/armv7-linux-androideabi/release/ksud bin/armeabi-v7a/ksud
 
-      # 4. Tự động commit và push file ksud mới lên repository
+      # 5. Tự động commit và push file ksud mới lên repository
       - name: Commit and Push prebuilt ksud binary
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: add prebuilt armeabi-v7a ksud binary"
           file_pattern: "userspace/ksud/bin/armeabi-v7a/ksud"
-          
