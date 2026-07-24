@@ -1,0 +1,55 @@
+name: Build ksuinit (ARMv7 32-bit)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-ksuinit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: armv7-linux-androideabi
+
+      - name: Build ksuinit
+        run: |
+          cd userspace/ksuinit
+
+          # Cấu hình NDK Compiler
+          export NDK_PATH=$ANDROID_NDK_LATEST_HOME
+          export NDK_BIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin
+
+          export CC_armv7_linux_androideabi=$NDK_BIN/armv7a-linux-androideabi24-clang
+          export CXX_armv7_linux_androideabi=$NDK_BIN/armv7a-linux-androideabi24-clang++
+          export AR_armv7_linux_androideabi=$NDK_BIN/llvm-ar
+          export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER=$NDK_BIN/armv7a-linux-androideabi24-clang
+
+          # Biên dịch ksuinit 32-bit
+          cargo build --target armv7-linux-androideabi --release
+
+          # Tạo thư mục armeabi-v7a và copy ksuinit sang
+          mkdir -p ../ksud/bin/armeabi-v7a
+          cp target/armv7-linux-androideabi/release/ksuinit ../ksud/bin/armeabi-v7a/ksuinit
+          chmod +x ../ksud/bin/armeabi-v7a/ksuinit
+
+      - name: Commit and Push ksuinit binary
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add userspace/ksud/bin/armeabi-v7a/ksuinit
+          git commit -m "Add compiled ksuinit 32-bit binary" || exit 0
+          git push
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ksuinit-armeabi-v7a
+          path: userspace/ksud/bin/armeabi-v7a/ksuinit
