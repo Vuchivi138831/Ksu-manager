@@ -25,11 +25,20 @@ jobs:
         run: |
           cd userspace/ksud
           
-          # Cấu hình linker NDK có sẵn trên Runner
-          export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang
+          # Đường dẫn NDK có sẵn trên Runner
+          export NDK_PATH=$ANDROID_NDK_LATEST_HOME
+          export NDK_BIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin
           
+          # Cấu hình C/C++ Compiler cho zstd-sys và các Crate chứa C code
+          export CC_armv7_linux_androideabi=$NDK_BIN/armv7a-linux-androideabi24-clang
+          export CXX_armv7_linux_androideabi=$NDK_BIN/armv7a-linux-androideabi24-clang++
+          export AR_armv7_linux_androideabi=$NDK_BIN/llvm-ar
+          export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER=$NDK_BIN/armv7a-linux-androideabi24-clang
+          
+          # Biên dịch Release
           cargo build --target armv7-linux-androideabi --release
           
+          # Tạo thư mục và copy kết quả
           mkdir -p bin/armeabi-v7a
           cp target/armv7-linux-androideabi/release/ksud bin/armeabi-v7a/ksud
 
