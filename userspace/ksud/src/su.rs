@@ -1,6 +1,7 @@
 use anyhow::{Ok, Result};
 use getopts::Options;
 use std::env;
+use std::ffi::CString;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
@@ -215,16 +216,16 @@ pub fn root_shell() -> Result<()> {
     let mut uid = getuid().as_raw();
     if free_idx < matches.free.len() {
         let name = &matches.free[free_idx];
-        uid = unsafe {
-            #[cfg(target_arch = "aarch64")]
-            let pw = libc::getpwnam(name.as_ptr()).as_ref();
-            #[cfg(target_arch = "x86_64")]
-            let pw = libc::getpwnam(name.as_ptr() as *const i8).as_ref();
-
-            match pw {
-                Some(pw) => pw.pw_uid,
-                None => name.parse::<u32>().unwrap_or(0),
-            }
+        if let Ok(c_name) = CString::new(name.as_str()) {
+            uid = unsafe {
+                let pw = libc::getpwnam(c_name.as_ptr()).as_ref();
+                match pw {
+                    Some(pw) => pw.pw_uid,
+                    None => name.parse::<u32>().unwrap_or(0),
+                }
+            };
+        } else {
+            uid = name.parse::<u32>().unwrap_or(0);
         }
     }
 
