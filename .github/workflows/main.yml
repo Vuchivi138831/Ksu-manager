@@ -1,53 +1,39 @@
 name: Build and Push ksud Binary (ARMv7 32-bit)
 
 on:
-  workflow_dispatch: # Bấm nút chạy thủ công trên GitHub
+  workflow_dispatch:
 
 permissions:
-  contents: write # Cấp quyền ghi để tự động push file ksud vào repo
+  contents: write
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout mã nguồn dự án
       - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # 2. Cài đặt Toolchain Rust & Target ARMv7 (32-bit)
       - name: Set up Rust for ARMv7
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: armv7-linux-androideabi
 
-      # 3. Biên dịch ksud bằng Cargo
-      - name: Build ksud with Cargo
+      - name: Build ksud
         run: |
           cd userspace/ksud
           
-          # Sử dụng Android NDK có sẵn trên máy chủ Runner
-          export NDK_PATH=$ANDROID_NDK_LATEST_HOME
+          # Cấu hình linker NDK có sẵn trên Runner
+          export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang
           
-          # Nâng API Level lên 24 (Android 7.0+) để hỗ trợ đầy đủ off64_t
-          export CC_armv7_linux_androideabi=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang
-          export AR_armv7_linux_androideabi=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-          
-          # Khai báo flag ép hệ thống 32-bit dùng file offset 64-bit (sửa lỗi hole-punch)
-          export CFLAGS_armv7_linux_androideabi="-D_FILE_OFFSET_BITS=64"
-          export CPPFLAGS_armv7_linux_androideabi="-D_FILE_OFFSET_BITS=64"
-          
-          # Thực hiện biên dịch bản Release
           cargo build --target armv7-linux-androideabi --release
           
-          # Tạo thư mục armeabi-v7a và copy file ksud sang
           mkdir -p bin/armeabi-v7a
           cp target/armv7-linux-androideabi/release/ksud bin/armeabi-v7a/ksud
 
-      # 4. Tự động commit và push file ksud mới lên repository
-      - name: Commit and Push prebuilt ksud binary
+      - name: Commit and Push Binary
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: add prebuilt armeabi-v7a ksud binary"
