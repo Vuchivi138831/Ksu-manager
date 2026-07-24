@@ -43,8 +43,7 @@ sha256 = "1"
 sha1 = "0.10"
 tempdir = "0.3"
 chrono = "0.4"
-# Đã đổi sang kho của vcombey để sửa lỗi biên dịch armv7 trên hệ điều hành 32-bit
-hole-punch = { git = hole-punch = { git = "https://github.com/tiann/hole-punch" }
+hole-punch = { git = "https://github.com/tiann/hole-punch" }
 
 [target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
 rustix = { git = "https://github.com/Kernel-SU/rustix.git", branch = "main", features = [
