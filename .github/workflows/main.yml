@@ -1,0 +1,44 @@
+name: Build and Push ksud Binary (ARMv7 32-bit)
+
+on:
+  workflow_dispatch: # Bấm nút chạy thủ công
+
+# Cấp quyền GHI (write) cho GITHUB_TOKEN để có thể git push lại vào repo
+permissions:
+  contents: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout mã nguồn
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Cài đặt Toolchain Rust & Target ARMv7 (32-bit)
+      - name: Set up Rust for ARMv7
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: armv7-linux-androideabi
+
+      # 3. Biên dịch ksud bằng Cargo và đưa vào đúng thư mục bin/armeabi-v7a
+      - name: Build ksud with Cargo
+        run: |
+          cd userspace/ksud
+          cargo build --target armv7-linux-androideabi --release
+          
+          # Tạo thư mục armeabi-v7a và copy file ksud sang
+          mkdir -p bin/armeabi-v7a
+          cp target/armv7-linux-androideabi/release/ksud bin/armeabi-v7a/ksud
+
+      # 4. Tự động commit và push file ksud mới lên repository
+      - name: Commit and Push prebuilt ksud binary
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: add prebuilt armeabi-v7a ksud binary"
+          file_pattern: "userspace/ksud/bin/armeabi-v7a/ksud"
+          
