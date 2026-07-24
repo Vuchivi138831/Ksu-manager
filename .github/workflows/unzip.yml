@@ -1,0 +1,29 @@
+name: Extract ksuinit and Push
+
+on:
+  workflow_dispatch:
+
+# Cấp quyền ghi (write) cho GITHUB_TOKEN để push code
+permissions:
+  contents: write
+
+jobs:
+  extract-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract ksuinit.zip
+        run: |
+          cd userspace
+          unzip -o ksuinit.zip
+          rm ksuinit.zip
+
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add userspace/
+          git commit -m "Extract ksuinit.zip source code" || exit 0
+          git push
